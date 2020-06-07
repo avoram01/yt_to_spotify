@@ -16,6 +16,12 @@ YT_URL = "https://www.googleapis.com/youtube/v3/playlistItems"
 
 class generatePlaylist:
 
+    def __init__(self):
+         self.yt_list = []
+
+    def create_spotify_playlist(self):
+        return
+
     # generates Spotify playist given Youtube playlist link
     def get_listID(self, url_input):
         try:
@@ -31,14 +37,37 @@ class generatePlaylist:
         except Exception as error:
             print(error)
             sys.exit(1)
+    
+    def add_spotify(self, name):
+        return
 
-    def get_yt_videos(self):
-        response = requests.get(url = YT_URL, params = {
-            "part": "snippet",
-            "playlistId": self.yt_id,
-            "key": secrets.yt_key
-        })
-        print(response.text)
+    def yt_to_spotify(self, pageToken):
+        try:
+            # retrieving current page of videos
+            response = requests.get(url = YT_URL, params = {
+                "part": "snippet",
+                "playlistId": self.yt_id,
+                "key": secrets.yt_key,
+                "pageToken": pageToken
+            })
+            parsed_resp = response.json()
+
+            # adding titles of current page to list
+            for video in parsed_resp["items"]:
+                self.yt_list.append(video['snippet']['title'])
+                # print("added " + video['snippet']['title'])
+                # print(len(self.yt_list))
+
+            if "nextPageToken" in parsed_resp:
+                # print("recursing with ", parsed_resp["nextPageToken"])
+                self.yt_to_spotify(parsed_resp["nextPageToken"])
+
+            response.raise_for_status()
+            return
+
+        except requests.exceptions.HTTPError:
+            print("Status code 404: Playlist could not be found")
+            sys.exit(1)
         
 
 
@@ -47,7 +76,9 @@ def main():
     ytTospotify = generatePlaylist()
     playlist_URL = input("What's the link to the playlist?\n")
     ytTospotify.get_listID(playlist_URL)
-    ytTospotify.get_yt_videos()
+    ytTospotify.yt_to_spotify("")
+    for video in ytTospotify.yt_list:
+        print(video)
 
 if __name__ == "__main__":
     main()
